@@ -20,15 +20,17 @@ wf.body(func(args) {
 	inputSpec := embeddings.spec
 
 	resolution := args.resolution
+	// nNeighbors := args.nNeighbors
 
 	csvEmbeddings := xsv.exportFrame([embeddings], "csv", {})
 
 	leidenClustering := exec.builder().
-		software(assets.importSoftware("@platforma-open/milaboratories.leiden-clustering.software:calculate-leiden")).
+		software(assets.importSoftware("@platforma-open/milaboratories.leiden-clustering.software:calculate-leiden-clusters")).
 		addFile("embeddings.csv", csvEmbeddings).
-		arg("--file_path").arg("embeddings.csv").
-		arg("--output_dir").arg(".").
-		arg("--resolution").arg(resolution)
+		arg("--input_csv").arg("embeddings.csv").
+		arg("--output_csv").arg("leiden_clusters.csv").
+		// arg("--n_neighbors").arg(nNeighbors).
+		arg("--leiden_resolution").arg(string(resolution)).
 		saveFile("leiden_clusters.csv").
 		printErrStreamToStdout().
 		saveStdoutContent().

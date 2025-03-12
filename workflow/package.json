@@ -8,7 +8,9 @@
     "test": "vitest",
     "format": "/usr/bin/env emacs --script ./format.el"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@platforma-open/milaboratories.leiden-clustering.software": "workspace:*"
+  },
   "devDependencies": {
     "@platforma-sdk/tengo-builder": "catalog:",
     "@platforma-sdk/workflow-tengo": "catalog:",

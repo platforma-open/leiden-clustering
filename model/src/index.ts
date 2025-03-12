@@ -37,9 +37,6 @@ export const model = BlockModel.create()
     },
   })
 
-  // Activate "Run" button only after these conditions get fulfilled
-  .argsValid((ctx) => ctx.uiState?.anchorColumn !== undefined)
-
   .output('embeddingOptions', (ctx) =>
     // I've added these "||" for backward compatibility (As I see, the shape of PColum was changed)
     ctx.resultPool.getOptions((spec) => isPColumnSpec(spec)
@@ -97,13 +94,13 @@ export const model = BlockModel.create()
             || col.spec.name === 'pl7.app/rna-seq/tsne3';
         });
 
-    // enriching with upstream data
+    // enriching with leiden clusters data
     const upstream
-      = ctx.resultPool
-        .getData()
-        .entries.map((v) => v.obj)
-        .filter(isPColumn)
-        .filter((column) => column.id.includes('metadata'));
+      = ctx.outputs?.resolve('leidenClusters')?.getPColumns();
+
+    if (upstream === undefined) {
+      return undefined;
+    }
 
     return ctx.createPFrame([...pCols, ...upstream]);
   })

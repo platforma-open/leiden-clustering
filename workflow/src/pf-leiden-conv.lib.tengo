@@ -14,12 +14,12 @@ getColumns := func(blockId, inputSpec, resolution) {
       ],
     "columns": [
       {
-        "column": "cluster",
+        "column": "Cluster",
         "id": "leidencluster",
         "allowNA": false,
         "spec": {
           "name": "pl7.app/rna-seq/leidencluster",
-          "valueType": "Double",
+          "valueType": "String",
           "domain": {
             "pl7.app/blockId": blockId
           },

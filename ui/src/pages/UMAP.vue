@@ -45,6 +45,7 @@ const defaultOptions: GraphMakerProps['defaultOptions'] = [
       ],
     },
   },
+
 ];
 
 </script>
