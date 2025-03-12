@@ -1,0 +1,46 @@
+{
+  "name": "@platforma-open/milaboratories.leiden-clustering",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "rm -rf block-pack/* && block-tools pack"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-open/milaboratories.leiden-clustering.workflow": "workspace:*",
+    "@platforma-open/milaboratories.leiden-clustering.model": "workspace:*",
+    "@platforma-open/milaboratories.leiden-clustering.ui": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@platforma-open/milaboratories.leiden-clustering.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@platforma-open/milaboratories.leiden-clustering.model/dist/model.json",
+      "ui": "@platforma-open/milaboratories.leiden-clustering.ui/dist"
+    },
+    "meta": {
+      "title": "Leiden Clustering",
+      "logo": "file:../logos/block-logo.png",
+      "url": "https://github.com/platforma-open/leiden-clustering",
+      "docs": "https://github.com/platforma-open/leiden-clustering/docs",
+      "support": "mailto:support@milaboratories.com",
+      "description": "Calculates leiden clustering for selected dataset",
+      "longDescription": "file:../docs/description.md",
+      "changelog": "file:../CHANGELOG.md",
+      "tags": [
+        "RNA-seq",
+        "single-cell"
+      ],
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/",
+        "logo": "file:../logos/organization-logo.png"
+      }
+    }
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "catalog:"
+  },
+  "packageManager": "pnpm@9.12.0"
+}
