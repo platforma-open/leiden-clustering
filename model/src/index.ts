@@ -71,13 +71,13 @@ export const model = BlockModel.create()
             || col.spec.name === 'pl7.app/rna-seq/umap3';
         });
 
-    // enriching with upstream data
+    // enriching with leiden clusters data
     const upstream
-      = ctx.resultPool
-        .getData()
-        .entries.map((v) => v.obj)
-        .filter(isPColumn)
-        .filter((column) => column.id.includes('metadata'));
+      = ctx.outputs?.resolve('leidenClusters')?.getPColumns();
+
+    if (upstream === undefined) {
+      return undefined;
+    }
 
     return ctx.createPFrame([...pCols, ...upstream]);
   })
