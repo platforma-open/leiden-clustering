@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering
 
+## 1.1.2
+
+### Patch Changes
+
+- b8d10ba: Updated tags and ranking
+
 ## 1.1.1
 
 ### Patch Changes
