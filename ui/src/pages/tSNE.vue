@@ -50,7 +50,6 @@ const defaultOptions: GraphMakerProps['defaultOptions'] = [
 
 <template>
   <PlBlockPage>
-    <template #title>Leiden Clustering</template>
     <GraphMaker v-model="app.model.ui.graphStateTSNE" chartType="scatterplot-umap" :p-frame="app.model.outputs.tSNEPf" :default-options="defaultOptions" />
   </PlBlockPage>
 </template>
