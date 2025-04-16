@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.model
 
+## 1.1.3
+
+### Patch Changes
+
+- 628f6c5: Improved UI
+
 ## 1.1.2
 
 ### Patch Changes
