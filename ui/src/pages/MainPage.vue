@@ -35,10 +35,10 @@ function setInput(inputRef?: PlRef) {
         Select resolution for Leiden clustering. The bigger the resolution, the more clusters will be found.
       </template>
     </PlNumberField>
-    <PlAlert v-if="app.model.args.resolution > 1" type="warn">
+    <PlAlert v-if="app.model.args.resolution > 1" type="warn" :style="{ width: '320px' }">
       {{ "Warning: The selected resolution is over commonly used range (0.4 - 1.0)" }}
     </PlAlert>
-    <PlAlert v-if="app.model.args.resolution < 0.4" type="warn">
+    <PlAlert v-if="app.model.args.resolution < 0.4" type="warn" :style="{ width: '320px' }">
       {{ "Warning: The selected resolution is under commonly used range (0.4 - 1.0)" }}
     </PlAlert>
   </PlBlockPage>

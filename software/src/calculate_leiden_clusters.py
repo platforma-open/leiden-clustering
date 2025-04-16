@@ -15,12 +15,20 @@ def process_pca_embeddings(input_csv, n_neighbors):
     """
     # Load PCA embeddings
     df = pd.read_csv(input_csv)
+
+    # Identify which PC value column to use
+    if "Principal Component Value" in df.columns:
+        pc_value_column = "Principal Component Value"
+    elif "Principal Component Value - Harmony corrected" in df.columns:
+        pc_value_column = "Principal Component Value - Harmony corrected"
+    else:
+        raise ValueError("Input CSV must contain either 'Principal Component Value' or 'Principal Component Value - Harmony corrected'.")
     
     # Create a unique identifier: SampleId + CellId
     df["UniqueCellId"] = df["Sample"] + "_" + df["Cell Barcode"]
     
     # Pivot data to have cells as rows, PCs as columns
-    pca_matrix = df.pivot(index="UniqueCellId", columns="Principal Component Number", values="Principal Component Value")
+    pca_matrix = df.pivot(index="UniqueCellId", columns="Principal Component Number", values=pc_value_column)
     
     # Create AnnData object
     adata = sc.AnnData(pca_matrix)
