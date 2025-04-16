@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.ui
 
+## 1.2.0
+
+### Minor Changes
+
+- de3457f: Updated to new batch correction PC embeddings export
+
 ## 1.1.3
 
 ### Patch Changes
