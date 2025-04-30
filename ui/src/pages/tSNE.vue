@@ -2,72 +2,61 @@
 import '@milaboratories/graph-maker/styles';
 import { PlBlockPage } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
-import type { GraphMakerProps } from '@milaboratories/graph-maker';
+import type { PredefinedGraphOption } from '@milaboratories/graph-maker';
 import { GraphMaker } from '@milaboratories/graph-maker';
+import type { PColumnIdAndSpec } from '@platforma-sdk/model';
+import { ref, watch } from 'vue';
 
 const app = useApp();
 
-const defaultOptions: GraphMakerProps['defaultOptions'] = [
-  {
-    inputName: 'x',
-    selectedSource: {
-      kind: 'PColumn',
-      name: 'pl7.app/rna-seq/tsne1',
-      valueType: 'Double',
-      axesSpec: [
-        {
-          name: 'pl7.app/sampleId',
-          type: 'String',
-        },
-        {
-          name: 'pl7.app/cellId',
-          type: 'String',
-        },
-      ],
+function getDefaultOptions(plotPcols?: PColumnIdAndSpec[]) {
+  if (!plotPcols) {
+    return undefined;
+  }
+
+  function getIndex(name: string, pcols: PColumnIdAndSpec[]): number {
+    return pcols.findIndex((p) => p.spec.name === name,
+    );
+  }
+  const defaults: PredefinedGraphOption<'scatterplot-umap'>[] = [
+    {
+      inputName: 'x',
+      selectedSource: plotPcols[getIndex('pl7.app/rna-seq/tsne1',
+        plotPcols)].spec,
     },
-  },
-  {
-    inputName: 'y',
-    selectedSource: {
-      kind: 'PColumn',
-      name: 'pl7.app/rna-seq/tsne2',
-      valueType: 'Double',
-      axesSpec: [
-        {
-          name: 'pl7.app/sampleId',
-          type: 'String',
-        },
-        {
-          name: 'pl7.app/cellId',
-          type: 'String',
-        },
-      ],
+    {
+      inputName: 'y',
+      selectedSource: plotPcols[getIndex('pl7.app/rna-seq/tsne2',
+        plotPcols)].spec,
     },
-  },
-  {
-    inputName: 'grouping',
-    selectedSource: {
-      kind: 'PColumn',
-      name: 'pl7.app/rna-seq/leidencluster',
-      valueType: 'String',
-      axesSpec: [
-        {
-          name: 'pl7.app/sampleId',
-          type: 'String',
-        },
-        {
-          name: 'pl7.app/cellId',
-          type: 'String',
-        },
-      ],
+    {
+      inputName: 'grouping',
+      selectedSource: plotPcols[getIndex('pl7.app/rna-seq/leidencluster',
+        plotPcols)].spec,
     },
-  },
-];
+  ];
+  return defaults;
+};
+
+// Steps needed to reset graph maker after changing input table
+const defaultOptions = ref(getDefaultOptions(app.model.outputs.plotPcols));
+const key = ref(defaultOptions.value ? JSON.stringify(defaultOptions.value) : '');
+// Reset graph maker state to allow new selection of defaults
+watch(() => app.model.args.principalComponentsRef, (_) => {
+  delete app.model.ui.graphStateTSNE.optionsState;
+  defaultOptions.value = getDefaultOptions(app.model.outputs.plotPcols);
+  key.value = defaultOptions.value ? JSON.stringify(defaultOptions.value) : '';
+},
+);
 
 </script>
 
 <template>
   <PlBlockPage>
-    <GraphMaker v-model="app.model.ui.graphStateTSNE" chartType="scatterplot-umap" :p-frame="app.model.outputs.tSNEPf" :default-options="defaultOptions" />
+    <GraphMaker
+      :key="key"
+      v-model="app.model.ui.graphStateTSNE" chartType="scatterplot-umap"
+      :p-frame="app.model.outputs.tSNEPf" :default-options="defaultOptions"
+    />
   </PlBlockPage>
 </template>
