@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.model
 
+## 1.2.0
+
+### Minor Changes
+
+- 5d4ec3f: Updates and plot fixes
+
 ## 1.1.3
 
 ### Patch Changes
