@@ -8,7 +8,7 @@ import { plRefsEqual } from '@platforma-sdk/model';
 const app = useApp();
 
 function setInput(inputRef?: PlRef) {
-  app.model.args.principalComponentsRef = inputRef;
+  app.model.ui.anchorColumn = inputRef;
   if (inputRef)
     app.model.args.title = app.model.outputs.embeddingOptions?.find((o) => plRefsEqual(o.ref, inputRef))?.label;
   else
