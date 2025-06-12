@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.workflow
 
+## 1.1.3
+
+### Patch Changes
+
+- e322eef: chore: update deps
+
 ## 1.1.2
 
 ### Patch Changes
