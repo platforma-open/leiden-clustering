@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.workflow
 
+## 1.2.0
+
+### Minor Changes
+
+- be07e24: Improved UI
+
 ## 1.1.3
 
 ### Patch Changes

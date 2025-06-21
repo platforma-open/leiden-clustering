@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.leiden-clustering.ui
 
+## 1.4.0
+
+### Minor Changes
+
+- be07e24: Improved UI
+
+### Patch Changes
+
+- Updated dependencies [be07e24]
+  - @platforma-open/milaboratories.leiden-clustering.model@1.3.0
+
 ## 1.3.0
 
 ### Minor Changes
