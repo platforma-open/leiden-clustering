@@ -55,8 +55,10 @@ watch(() => app.model.args.principalComponentsRef, (_) => {
   <PlBlockPage>
     <GraphMaker
       :key="key"
-      v-model="app.model.ui.graphStateTSNE" chartType="scatterplot-umap"
-      :p-frame="app.model.outputs.tSNEPf" :default-options="defaultOptions"
+      v-model="app.model.ui.graphStateTSNE"
+      chartType="scatterplot-umap"
+      :p-frame="app.model.outputs.tSNEPf"
+      :default-options="defaultOptions"
     />
   </PlBlockPage>
 </template>
