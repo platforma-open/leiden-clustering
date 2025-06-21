@@ -38,23 +38,26 @@ wf.body(func(args) {
 		run()
 
 	leidenImportParams := pfLeidenConv.getColumns(blockId, inputSpec, resolution)
-	leidenPf := xsv.importFile(leidenClustering.getFile("leiden_clusters.csv"), "csv", leidenImportParams)
+	leidenPf := xsv.importFile(leidenClustering.getFile("leiden_clusters.csv"), "csv", leidenImportParams, {splitDataAndSpec: true})
 
+	trace := pSpec.makeTrace(inputSpec,
+		{type: "milaboratories.leiden-clustering", id: blockId, importance: 40, label: "Leiden Clustering - "}
+	)
 
-	// Prepare exports
-	// @TODO to be updated exporting Pframe directly
-	exports := {
-		leidenClusters : {
-            spec: leidenPf["leidencluster.spec"],
-            data: leidenPf["leidencluster.data"]
-            }
-    }
+	// Build leiden clusters pFrame with trace injection
+	leidenOutputPf := pframes.pFrameBuilder()
+	for k, v in leidenPf {
+		leidenOutputPf.add(k, trace.inject(v.spec), v.data)
+	}
+	leidenOutputPf = leidenOutputPf.build()
 
 	return {
 		outputs: {
-			leidenClusters: pframes.exportFrame(leidenPf)
+			leidenClusters: pframes.exportFrame(leidenOutputPf)
 		},
-		exports: exports
+		exports: {
+			pf: leidenOutputPf
+		}
 	}
 })
 
