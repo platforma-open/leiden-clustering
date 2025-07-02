@@ -29,9 +29,11 @@ wf.body(func(args) {
 		addFile("embeddings.csv", csvEmbeddings).
 		arg("--input_csv").arg("embeddings.csv").
 		arg("--output_csv").arg("leiden_clusters.csv").
+		arg("--linker_csv").arg("leiden_linker.csv").
 		// arg("--n_neighbors").arg(nNeighbors).
 		arg("--leiden_resolution").arg(string(resolution)).
 		saveFile("leiden_clusters.csv").
+		saveFile("leiden_linker.csv").
 		printErrStreamToStdout().
 		saveStdoutContent().
 		cache(24 * 60 * 60 * 1000).
@@ -39,6 +41,42 @@ wf.body(func(args) {
 
 	leidenImportParams := pfLeidenConv.getColumns(blockId, inputSpec, resolution)
 	leidenPf := xsv.importFile(leidenClustering.getFile("leiden_clusters.csv"), "csv", leidenImportParams, {splitDataAndSpec: true})
+
+	// Copied from pf-leiden-conv.lib.tengo, make less redundant in the future
+	leidenClusterAxisSpec := {
+		name: "pl7.app/rna-seq/leidencluster",
+		type: "String",
+		domain: {
+			"pl7.app/blockId": blockId
+		},
+		annotations: {
+			"pl7.app/label": "Cluster Resolution " + resolution
+		}
+	}
+
+	// Create linker column: [SampleId][CellId][Cluster] -> 1
+	leidenLinkerPf := xsv.importFile(leidenClustering.getFile("leiden_linker.csv"), "csv", {
+		axes: [{
+			column: "SampleId",
+			spec: inputSpec.axesSpec[0]
+		}, {
+			column: "CellId", 
+			spec: inputSpec.axesSpec[1]
+		}, {
+			column: "Cluster",
+			spec: leidenClusterAxisSpec
+		}],
+		columns: [{
+			column: "Link",
+			spec: {
+				name: "pl7.app/rna-seq/clusterLink",
+				valueType: "Int",
+				annotations: {
+					"pl7.app/isLinkerColumn": "true"
+				}
+			}
+		}]
+	}, {splitDataAndSpec: true})
 
 	trace := pSpec.makeTrace(inputSpec,
 		{type: "milaboratories.leiden-clustering", id: blockId, importance: 40, label: "Leiden Clustering - "}
@@ -51,12 +89,22 @@ wf.body(func(args) {
 	}
 	leidenOutputPf = leidenOutputPf.build()
 
+	// Build exports pFrame including linker column
+	exportsPf := pframes.pFrameBuilder()
+	
+	for pf in [leidenPf, leidenLinkerPf] {
+		for k, v in pf {
+			exportsPf.add(k, trace.inject(v.spec), v.data)
+		}
+	}
+	exportsPf = exportsPf.build()
+
 	return {
 		outputs: {
 			leidenClusters: pframes.exportFrame(leidenOutputPf)
 		},
 		exports: {
-			pf: leidenOutputPf
+			pf: exportsPf
 		}
 	}
 })

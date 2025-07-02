@@ -70,6 +70,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run Leiden clustering on PCA embeddings with duplicate CellIds across samples.")
     parser.add_argument("--input_csv", type=str, required=True, help="Path to the PCA embeddings CSV file.")
     parser.add_argument("--output_csv", type=str, required=True, help="Path to save cluster assignments.")
+    parser.add_argument("--linker_csv", type=str, required=True, help="Path to save linker data for pFrame construction.")
     parser.add_argument("--n_neighbors", type=int, default=15, help="Number of neighbors for the graph (default: 15).")
     parser.add_argument("--leiden_resolution", type=float, default=1.0, help="Resolution for Leiden clustering (default: 1.0).")
 
@@ -81,8 +82,13 @@ def main():
     # Perform clustering
     cluster_assignments = perform_clustering(adata, args.leiden_resolution)
 
-    # Save output
+    # Create linker data: SampleId,CellId,Cluster,Link
+    linker_data = cluster_assignments[["SampleId", "CellId", "Cluster"]].copy()
+    linker_data["Link"] = 1
+
+    # Save outputs
     cluster_assignments.to_csv(args.output_csv, index=False)
+    linker_data.to_csv(args.linker_csv, index=False)
 
 if __name__ == "__main__":
     main()
