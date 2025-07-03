@@ -42,16 +42,13 @@ wf.body(func(args) {
 	leidenImportParams := pfLeidenConv.getColumns(blockId, inputSpec, resolution)
 	leidenPf := xsv.importFile(leidenClustering.getFile("leiden_clusters.csv"), "csv", leidenImportParams, {splitDataAndSpec: true})
 
-	// Copied from pf-leiden-conv.lib.tengo, make less redundant in the future
-	leidenClusterAxisSpec := {
-		name: "pl7.app/rna-seq/leidencluster",
-		type: "String",
-		domain: {
-			"pl7.app/blockId": blockId
-		},
-		annotations: {
-			"pl7.app/label": "Cluster Resolution " + resolution
-		}
+	// Extract cluster column spec from leidenImportParams and convert to axis spec (change valueType key to type)
+	clusterColumnSpec := leidenImportParams.columns[0].spec
+	clusterAxisSpec := {
+		name: clusterColumnSpec.name,
+		type: clusterColumnSpec.valueType,
+		domain: clusterColumnSpec.domain,
+		annotations: clusterColumnSpec.annotations
 	}
 
 	// Create linker column: [SampleId][CellId][Cluster] -> 1
@@ -64,7 +61,7 @@ wf.body(func(args) {
 			spec: inputSpec.axesSpec[1]
 		}, {
 			column: "Cluster",
-			spec: leidenClusterAxisSpec
+			spec: clusterAxisSpec
 		}],
 		columns: [{
 			column: "Link",
