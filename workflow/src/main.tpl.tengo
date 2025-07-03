@@ -69,7 +69,9 @@ wf.body(func(args) {
 				name: "pl7.app/rna-seq/clusterLink",
 				valueType: "Int",
 				annotations: {
-					"pl7.app/isLinkerColumn": "true"
+					"pl7.app/isLinkerColumn": "true",
+					"pl7.app/label": clusterAxisSpec.annotations["pl7.app/label"] + " Linker",
+					"pl7.app/table/visibility": "optional"
 				}
 			}
 		}]
