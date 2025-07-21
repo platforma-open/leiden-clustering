@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.software
 
+## 1.4.0
+
+### Minor Changes
+
+- 9e5428c: Add linker pcol for export
+
 ## 1.3.0
 
 ### Minor Changes

@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.leiden-clustering.workflow
 
+## 1.3.0
+
+### Minor Changes
+
+- 9e5428c: Add linker pcol for export
+
+### Patch Changes
+
+- Updated dependencies [9e5428c]
+  - @platforma-open/milaboratories.leiden-clustering.software@1.4.0
+
 ## 1.2.0
 
 ### Minor Changes
