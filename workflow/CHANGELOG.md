@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.workflow
 
+## 1.4.0
+
+### Minor Changes
+
+- 925fc38: Update trace and importance
+
 ## 1.3.0
 
 ### Minor Changes
