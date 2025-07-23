@@ -77,9 +77,14 @@ wf.body(func(args) {
 		}]
 	}, {splitDataAndSpec: true})
 
+	// Prepare with informative label for trace
+	resolutionStr := string(resolution)
+	traceLabel := "Leiden Clustering (resolution:" + resolutionStr + ")"
+	
+	// Make trace
 	trace := pSpec.makeTrace(inputSpec,
-		{type: "milaboratories.leiden-clustering", id: blockId, importance: 40, label: "Leiden Clustering - "}
-	)
+		{type: "milaboratories.leiden-clustering", id: blockId, importance: 60, label: traceLabel}
+		)
 
 	// Build leiden clusters pFrame with trace injection
 	leidenOutputPf := pframes.pFrameBuilder()
