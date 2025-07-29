@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.software
 
+## 1.5.0
+
+### Minor Changes
+
+- 213044c: Minor change to labels of clusters (from 1, 2, 3 to CL-1, CL-2, CL-3)
+
 ## 1.4.0
 
 ### Minor Changes
