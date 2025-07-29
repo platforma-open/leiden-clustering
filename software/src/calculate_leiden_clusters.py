@@ -55,7 +55,7 @@ def perform_clustering(adata, leiden_resolution):
     # Extract cluster assignments
     cluster_assignments = pd.DataFrame({
         "UniqueCellId": adata.obs_names,  # Unique ID as first column
-        "Cluster": adata.obs["leiden"]
+        "Cluster": "CL-" + adata.obs["leiden"].astype(str)
     })
 
     # Split SampleId and CellId
