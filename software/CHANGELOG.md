@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.software
 
+## 1.6.0
+
+### Minor Changes
+
+- 7407462: Update script to work with updated Cell ID axis specifications
+
 ## 1.5.0
 
 ### Minor Changes
