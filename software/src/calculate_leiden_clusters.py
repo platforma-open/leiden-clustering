@@ -2,6 +2,7 @@ import pandas as pd
 import scanpy as sc
 import argparse
 
+
 def process_pca_embeddings(input_csv, n_neighbors):
     """
     Process PCA embeddings from CSV and construct AnnData object.
@@ -23,20 +24,34 @@ def process_pca_embeddings(input_csv, n_neighbors):
         pc_value_column = "Principal Component Value - Harmony corrected"
     else:
         raise ValueError("Input CSV must contain either 'Principal Component Value' or 'Principal Component Value - Harmony corrected'.")
-    
+
+    # Validate and normalize column headers to support both legacy and new names
+    base_required = {"Sample", "Principal Component Number", pc_value_column}
+    cell_headers = {"Cell Barcode", "Cell ID"}
+    missing_base = base_required - set(df.columns)
+    has_cell_header = any(h in df.columns for h in cell_headers)
+    if missing_base or not has_cell_header:
+        expected_desc = f"{sorted(base_required)} and one of {sorted(cell_headers)}"
+        raise KeyError(f"PCA CSV must contain columns: {expected_desc}. Found: {list(df.columns)}")
+
+    # Normalize to legacy internal name 'Cell Barcode'
+    if "Cell ID" in df.columns and "Cell Barcode" not in df.columns:
+        df = df.rename(columns={"Cell ID": "Cell Barcode"})
+
     # Create a unique identifier: SampleId + CellId
     df["UniqueCellId"] = df["Sample"] + "_" + df["Cell Barcode"]
-    
+
     # Pivot data to have cells as rows, PCs as columns
     pca_matrix = df.pivot(index="UniqueCellId", columns="Principal Component Number", values=pc_value_column)
-    
+
     # Create AnnData object
     adata = sc.AnnData(pca_matrix)
-    
+
     # Compute the neighborhood graph
     sc.pp.neighbors(adata, use_rep="X", n_neighbors=n_neighbors)
-    
+
     return adata
+
 
 def perform_clustering(adata, leiden_resolution):
     """
@@ -66,11 +81,12 @@ def perform_clustering(adata, leiden_resolution):
 
     return cluster_assignments
 
+
 def main():
     parser = argparse.ArgumentParser(description="Run Leiden clustering on PCA embeddings with duplicate CellIds across samples.")
     parser.add_argument("--input_csv", type=str, required=True, help="Path to the PCA embeddings CSV file.")
     parser.add_argument("--output_csv", type=str, required=True, help="Path to save cluster assignments.")
-    parser.add_argument("--linker_csv", type=str, required=True, help="Path to save linker data for pFrame construction.")
+    parser.add_argument("--linker_csv", type=str, default="leiden_linker.csv", help="Path to save linker data for pFrame construction.")
     parser.add_argument("--n_neighbors", type=int, default=15, help="Number of neighbors for the graph (default: 15).")
     parser.add_argument("--leiden_resolution", type=float, default=1.0, help="Resolution for Leiden clustering (default: 1.0).")
 
@@ -89,6 +105,7 @@ def main():
     # Save outputs
     cluster_assignments.to_csv(args.output_csv, index=False)
     linker_data.to_csv(args.linker_csv, index=False)
+
 
 if __name__ == "__main__":
     main()
