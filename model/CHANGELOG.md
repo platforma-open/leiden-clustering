@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.model
 
+## 1.4.0
+
+### Minor Changes
+
+- 561abcd: Migrate to PlTabs to switch between UMAP and tSNE
+
 ## 1.3.0
 
 ### Minor Changes
