@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.workflow
 
+## 1.6.0
+
+### Minor Changes
+
+- b7c9bfa: Add batch support
+
 ## 1.5.1
 
 ### Patch Changes
