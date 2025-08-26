@@ -3,7 +3,8 @@ import type {
   InferOutputsType,
   PColumnIdAndSpec,
   PFrameHandle,
-  PlRef } from '@platforma-sdk/model';
+  PlRef,
+} from '@platforma-sdk/model';
 import {
   BlockModel,
   isPColumn,
@@ -25,7 +26,7 @@ export type BlockArgs = {
 export const model = BlockModel.create()
 
   .withArgs<BlockArgs>({
-    resolution: 1,
+    resolution: 0.5,
   })
 
   .withUiState<UiState>({
