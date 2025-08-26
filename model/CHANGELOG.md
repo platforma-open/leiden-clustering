@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.model
 
+## 1.4.1
+
+### Patch Changes
+
+- ca4b416: Change default resolution
+
 ## 1.4.0
 
 ### Minor Changes

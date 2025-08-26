@@ -1,5 +1,13 @@
 # @platforma-open/milaboratories.leiden-clustering
 
+## 1.1.15
+
+### Patch Changes
+
+- Updated dependencies [ca4b416]
+  - @platforma-open/milaboratories.leiden-clustering.model@1.4.1
+  - @platforma-open/milaboratories.leiden-clustering.ui@1.5.1
+
 ## 1.1.14
 
 ### Patch Changes
