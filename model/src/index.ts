@@ -47,7 +47,7 @@ export const model = BlockModel.create()
   .output('embeddingOptions', (ctx) =>
     ctx.resultPool.getOptions((spec) => isPColumnSpec(spec)
       && spec.name === 'pl7.app/rna-seq/pcvalue'
-    , { includeNativeLabel: true, addLabelAsSuffix: true }),
+    , { includeNativeLabel: false, addLabelAsSuffix: true }),
   )
 
   .output('UMAPPf', (ctx): PFrameHandle | undefined => {
