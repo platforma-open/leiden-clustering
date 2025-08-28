@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.model
 
+## 1.4.2
+
+### Patch Changes
+
+- b7a8ac6: Update SDK
+
 ## 1.4.1
 
 ### Patch Changes
