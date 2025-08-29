@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.workflow
 
+## 1.6.2
+
+### Patch Changes
+
+- e80cf06: Updated trace
+
 ## 1.6.1
 
 ### Patch Changes

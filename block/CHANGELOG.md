@@ -1,5 +1,12 @@
 # @platforma-open/milaboratories.leiden-clustering
 
+## 1.1.17
+
+### Patch Changes
+
+- Updated dependencies [e80cf06]
+  - @platforma-open/milaboratories.leiden-clustering.workflow@1.6.2
+
 ## 1.1.16
 
 ### Patch Changes
