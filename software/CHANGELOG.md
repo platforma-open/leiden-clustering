@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.software
 
+## 1.6.2
+
+### Patch Changes
+
+- 9c10a43: Changeset
+
 ## 1.6.1
 
 ### Patch Changes

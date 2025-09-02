@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.model
 
+## 1.4.3
+
+### Patch Changes
+
+- 9c10a43: Changeset
+
 ## 1.4.2
 
 ### Patch Changes

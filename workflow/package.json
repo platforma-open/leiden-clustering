@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.leiden-clustering.workflow",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "type": "module",
   "description": "Block Workflow",
   "scripts": {
