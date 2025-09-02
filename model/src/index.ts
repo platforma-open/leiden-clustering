@@ -65,7 +65,7 @@ export const model = BlockModel.create()
           return (col.spec.name === 'pl7.app/rna-seq/umap1'
             || col.spec.name === 'pl7.app/rna-seq/umap2'
             || col.spec.name === 'pl7.app/rna-seq/umap3')
-          && col.spec.domain?.['pl7.app/rna-seq/batch-corrected'] === anchorSpec.domain?.['pl7.app/rna-seq/batch-corrected'];
+          && col.spec.domain?.['pl7.app/blockId'] === anchorSpec.domain?.['pl7.app/blockId'];
         });
 
     // enriching with leiden clusters data
@@ -76,7 +76,13 @@ export const model = BlockModel.create()
       return undefined;
     }
 
-    return ctx.createPFrame([...pCols, ...upstream]);
+    // Return batch corrected UMAP if present
+    let finalPcols = pCols.filter((col) => col.spec.domain?.['pl7.app/rna-seq/batch-corrected'] === 'true');
+    if (finalPcols.length === 0) {
+      finalPcols = pCols.filter((col) => col.spec.domain?.['pl7.app/rna-seq/batch-corrected'] === 'false');
+    }
+
+    return ctx.createPFrame([...finalPcols, ...upstream]);
   })
 
   .output('tSNEPf', (ctx): PFrameHandle | undefined => {
@@ -94,7 +100,7 @@ export const model = BlockModel.create()
           return (col.spec.name === 'pl7.app/rna-seq/tsne1'
             || col.spec.name === 'pl7.app/rna-seq/tsne2'
             || col.spec.name === 'pl7.app/rna-seq/tsne3')
-          && col.spec.domain?.['pl7.app/rna-seq/batch-corrected'] === anchorSpec.domain?.['pl7.app/rna-seq/batch-corrected'];
+          && col.spec.domain?.['pl7.app/blockId'] === anchorSpec.domain?.['pl7.app/blockId'];
         });
 
     // enriching with leiden clusters data
@@ -105,7 +111,13 @@ export const model = BlockModel.create()
       return undefined;
     }
 
-    return ctx.createPFrame([...pCols, ...upstream]);
+    // Return batch corrected UMAP if present
+    let finalPcols = pCols.filter((col) => col.spec.domain?.['pl7.app/rna-seq/batch-corrected'] === 'true');
+    if (finalPcols.length === 0) {
+      finalPcols = pCols.filter((col) => col.spec.domain?.['pl7.app/rna-seq/batch-corrected'] === 'false');
+    }
+
+    return ctx.createPFrame([...finalPcols, ...upstream]);
   })
 
   .output('plotPcols', (ctx) => {
@@ -122,7 +134,7 @@ export const model = BlockModel.create()
         .filter((col) => {
           return ((col.spec.name.slice(0, -1) === 'pl7.app/rna-seq/tsne'
             || col.spec.name.slice(0, -1) === 'pl7.app/rna-seq/umap')
-          && col.spec.domain?.['pl7.app/rna-seq/batch-corrected'] === anchorSpec.domain?.['pl7.app/rna-seq/batch-corrected']);
+          && col.spec.domain?.['pl7.app/blockId'] === anchorSpec.domain?.['pl7.app/blockId']);
         });
 
     // enriching with leiden clusters data
@@ -133,7 +145,13 @@ export const model = BlockModel.create()
       return undefined;
     }
 
-    return [...pCols, ...upstream].map(
+    // Return batch corrected UMAP if present
+    let finalPcols = pCols.filter((col) => col.spec.domain?.['pl7.app/rna-seq/batch-corrected'] === 'true');
+    if (finalPcols.length === 0) {
+      finalPcols = pCols.filter((col) => col.spec.domain?.['pl7.app/rna-seq/batch-corrected'] === 'false');
+    }
+
+    return [...finalPcols, ...upstream].map(
       (c) =>
         ({
           columnId: c.id,
