@@ -172,6 +172,6 @@ export const model = BlockModel.create()
       : 'Leiden Clustering',
   )
 
-  .done();
+  .done(2);
 
 export type BlockOutputs = InferOutputsType<typeof model>;
