@@ -12,7 +12,7 @@
       "passThroughEnv": ["PL_ADDRESS", "PL_TEST_PASSWORD", "PL_TEST_USER", "PL_TEST_PROXY", "DEBUG", "PL_DOCKER_REGISTRY_PUSH_TO"]
     },
     "mark-stable": {
-      "passThroughEnv": ["PL_REGISTRY", "AWS_*"],
+      "passThroughEnv": ["PL_REGISTRY", "AWS_*", "PL_DOCKER_REGISTRY_PUSH_TO"],
       "cache": false
     }
   }
