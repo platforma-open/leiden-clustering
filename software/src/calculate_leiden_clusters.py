@@ -1,6 +1,8 @@
+import polars as pl
 import pandas as pd
 import scanpy as sc
 import argparse
+import numpy as np
 
 
 def process_pca_embeddings(input_csv, n_neighbors):
@@ -15,7 +17,7 @@ def process_pca_embeddings(input_csv, n_neighbors):
         adata (AnnData): Annotated data object with PCA embeddings.
     """
     # Load PCA embeddings
-    df = pd.read_csv(input_csv)
+    df = pl.read_csv(input_csv)
 
     # Identify which PC value column to use
     if "Principal Component Value" in df.columns:
@@ -36,16 +38,33 @@ def process_pca_embeddings(input_csv, n_neighbors):
 
     # Normalize to legacy internal name 'Cell Barcode'
     if "Cell ID" in df.columns and "Cell Barcode" not in df.columns:
-        df = df.rename(columns={"Cell ID": "Cell Barcode"})
+        df = df.rename({"Cell ID": "Cell Barcode"})
 
     # Create a unique identifier: SampleId + CellId
-    df["UniqueCellId"] = df["Sample"] + "_" + df["Cell Barcode"]
+    df = df.with_columns(
+        (pl.col("Sample").cast(pl.Utf8) + "_" + pl.col("Cell Barcode").cast(pl.Utf8)).alias("UniqueCellId")
+    )
 
-    # Pivot data to have cells as rows, PCs as columns
-    pca_matrix = df.pivot(index="UniqueCellId", columns="Principal Component Number", values=pc_value_column)
+    # Sort by cell and PC number to ensure correct order for reshaping
+    df_sorted = df.sort("UniqueCellId", "Principal Component Number")
+
+    # Get dimensions for reshaping
+    n_cells = df_sorted.get_column("UniqueCellId").n_unique()
+    n_pcs = df_sorted.get_column("Principal Component Number").n_unique()
+
+    # Reshape values into a dense matrix
+    pca_matrix_values = df_sorted.get_column(pc_value_column).to_numpy().reshape((n_cells, n_pcs))
+
+    # Get cell and PC names for AnnData object creation
+    cell_names = df_sorted.get_column("UniqueCellId").unique().to_list()
+    pc_names = df_sorted.get_column("Principal Component Number").unique().to_list()
 
     # Create AnnData object
-    adata = sc.AnnData(pca_matrix)
+    adata = sc.AnnData(
+        X=pca_matrix_values,
+        obs=pd.DataFrame(index=cell_names),
+        var=pd.DataFrame(index=pc_names)
+    )
 
     # Compute the neighborhood graph
     sc.pp.neighbors(adata, use_rep="X", n_neighbors=n_neighbors)
@@ -67,17 +86,23 @@ def perform_clustering(adata, leiden_resolution):
     # Perform Leiden clustering
     sc.tl.leiden(adata, resolution=leiden_resolution, flavor='igraph', n_iterations=2, directed=False)
     
-    # Extract cluster assignments
-    cluster_assignments = pd.DataFrame({
-        "UniqueCellId": adata.obs_names,  # Unique ID as first column
-        "Cluster": "CL-" + adata.obs["leiden"].astype(str)
+    # Create a Polars Series for cluster labels and prepend "CL-" efficiently
+    cluster_series = "CL-" + pl.Series(adata.obs["leiden"]).cast(pl.Utf8)
+
+    # Extract cluster assignments into a Polars DataFrame
+    cluster_assignments = pl.DataFrame({
+        "UniqueCellId": adata.obs_names.to_list(),
+        "Cluster": cluster_series
     })
 
-    # Split SampleId and CellId
-    cluster_assignments[["SampleId", "CellId"]] = cluster_assignments["UniqueCellId"].str.split("_", n=1, expand=True)
+    # Split UniqueCellId into SampleId and CellId
+    cluster_assignments = cluster_assignments.with_columns([
+        pl.col("UniqueCellId").str.split_exact("_", 1).struct.field("field_0").alias("SampleId"),
+        pl.col("UniqueCellId").str.split_exact("_", 1).struct.field("field_1").alias("CellId"),
+    ])
     
-    # Reorder columns to have UniqueCellId first
-    cluster_assignments = cluster_assignments[["UniqueCellId", "SampleId", "CellId", "Cluster"]]
+    # Reorder columns
+    cluster_assignments = cluster_assignments.select(["UniqueCellId", "SampleId", "CellId", "Cluster"])
 
     return cluster_assignments
 
@@ -99,12 +124,12 @@ def main():
     cluster_assignments = perform_clustering(adata, args.leiden_resolution)
 
     # Create linker data: SampleId,CellId,Cluster,Link
-    linker_data = cluster_assignments[["SampleId", "CellId", "Cluster"]].copy()
-    linker_data["Link"] = 1
+    linker_data = cluster_assignments.select(["SampleId", "CellId", "Cluster"])
+    linker_data = linker_data.with_columns(pl.lit(1).alias("Link"))
 
     # Save outputs
-    cluster_assignments.to_csv(args.output_csv, index=False)
-    linker_data.to_csv(args.linker_csv, index=False)
+    cluster_assignments.write_csv(args.output_csv)
+    linker_data.write_csv(args.linker_csv)
 
 
 if __name__ == "__main__":
