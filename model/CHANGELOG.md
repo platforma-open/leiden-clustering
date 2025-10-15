@@ -1,5 +1,14 @@
 # @platforma-open/milaboratories.leiden-clustering.model
 
+## 1.4.4
+
+### Patch Changes
+
+- ec60dad: technical release
+- dcbd64b: technical release
+- 69e135c: technical release
+- ba6a3fe: technical release
+
 ## 1.4.3
 
 ### Patch Changes

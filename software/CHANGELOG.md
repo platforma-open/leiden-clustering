@@ -1,5 +1,14 @@
 # @platforma-open/milaboratories.leiden-clustering.software
 
+## 1.6.3
+
+### Patch Changes
+
+- ec60dad: technical release
+- dcbd64b: technical release
+- 69e135c: technical release
+- ba6a3fe: technical release
+
 ## 1.6.2
 
 ### Patch Changes

@@ -1,5 +1,21 @@
 # @platforma-open/milaboratories.leiden-clustering
 
+## 1.1.19
+
+### Patch Changes
+
+- ec60dad: technical release
+- dcbd64b: technical release
+- 69e135c: technical release
+- ba6a3fe: technical release
+- Updated dependencies [ec60dad]
+- Updated dependencies [dcbd64b]
+- Updated dependencies [69e135c]
+- Updated dependencies [ba6a3fe]
+  - @platforma-open/milaboratories.leiden-clustering.model@1.4.4
+  - @platforma-open/milaboratories.leiden-clustering.ui@1.5.4
+  - @platforma-open/milaboratories.leiden-clustering.workflow@1.6.4
+
 ## 1.1.18
 
 ### Patch Changes
