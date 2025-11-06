@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.leiden-clustering.workflow
 
+## 1.6.5
+
+### Patch Changes
+
+- f6789a7: Update to Parquet
+
 ## 1.6.4
 
 ### Patch Changes
