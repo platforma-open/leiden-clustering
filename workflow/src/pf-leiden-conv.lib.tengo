@@ -24,7 +24,7 @@ getColumns := func(blockId, inputSpec, resolution) {
             "pl7.app/blockId": blockId
           },
           annotations: {
-            "pl7.app/label": "Cluster Resolution " + resolution
+            "pl7.app/label": "Leiden Cluster Id"
           }
         }
       }

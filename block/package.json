@@ -26,9 +26,9 @@
       "title": "Leiden Clustering",
       "logo": "file:../logos/block-logo.png",
       "url": "https://github.com/platforma-open/leiden-clustering",
-      "docs": "https://github.com/platforma-open/leiden-clustering/docs",
+      "docs": "https://docs.platforma.bio/guides/sc-rna-seq-analysis/leiden-clustering/",
       "support": "mailto:support@milaboratories.com",
-      "description": "Calculates leiden clustering for selected dataset",
+      "description": "Performs Leiden clustering on PCA embeddings to identify cell populations using a configurable resolution parameter.",
       "longDescription": "file:../docs/description.md",
       "changelog": "file:../CHANGELOG.md",
       "tags": [

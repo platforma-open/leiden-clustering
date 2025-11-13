@@ -1,11 +1,12 @@
 wf := import("@platforma-sdk/workflow-tengo:workflow")
-exec := import("@platforma-sdk/workflow-tengo:exec")
 assets:= import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
 xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 pSpec := import("@platforma-sdk/workflow-tengo:pframes.spec")
 
 pfLeidenConv := import(":pf-leiden-conv")
+leidenClusteringTpl := assets.importTemplate(":leiden-clustering-calculation")
 
 wf.prepare(func(args){
 	return {
@@ -28,26 +29,15 @@ wf.body(func(args) {
 
 	csvEmbeddings := xsv.exportFrame([embeddings], "csv", { mem: defaultConvMem, cpu: defaultConvCpu })
 
-	leidenClustering := exec.builder().
-		software(assets.importSoftware("@platforma-open/milaboratories.leiden-clustering.software:calculate-leiden-clusters")).
-		mem("32GiB").
-		cpu(1).
-		addFile("embeddings.csv", csvEmbeddings).
-		arg("--input_csv").arg("embeddings.csv").
-		arg("--output_csv").arg("leiden_clusters.csv").
-		arg("--linker_csv").arg("leiden_linker.csv").
-		// arg("--n_neighbors").arg(nNeighbors).
-		arg("--leiden_resolution").arg(string(resolution)).
-		saveFile("leiden_clusters.csv").
-		saveFile("leiden_linker.csv").
-		printErrStreamToStdout().
-		saveStdoutContent().
-		cache(24 * 60 * 60 * 1000).
-		run()
-
+	leidenClusteringRender := render.create(leidenClusteringTpl, {
+		csvEmbeddings: csvEmbeddings,
+		resolution: resolution,
+		mem: "32GiB",
+		cpu: 1
+	})
 
 	leidenImportParams := pfLeidenConv.getColumns(blockId, inputSpec, resolution)
-	leidenPf := xsv.importFile(leidenClustering.getFile("leiden_clusters.csv"), "csv", leidenImportParams, {splitDataAndSpec: true, mem: defaultConvMem, cpu: defaultConvCpu})
+	leidenPf := xsv.importFile(leidenClusteringRender.output("leidenClustersCsv"), "csv", leidenImportParams, {splitDataAndSpec: true, mem: defaultConvMem, cpu: defaultConvCpu})
 
 	// Extract cluster column spec from leidenImportParams and convert to axis spec (change valueType key to type)
 	clusterColumnSpec := leidenImportParams.columns[0].spec
@@ -59,7 +49,7 @@ wf.body(func(args) {
 	}
 
 	// Create linker column: [SampleId][CellId][Cluster] -> 1
-	leidenLinkerPf := xsv.importFile(leidenClustering.getFile("leiden_linker.csv"), "csv", {
+	leidenLinkerPf := xsv.importFile(leidenClusteringRender.output("leidenLinkerCsv"), "csv", {
 		axes: [{
 			column: "SampleId",
 			spec: inputSpec.axesSpec[0]
