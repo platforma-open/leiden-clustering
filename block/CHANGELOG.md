@@ -1,5 +1,16 @@
 # @platforma-open/milaboratories.leiden-clustering
 
+## 1.2.0
+
+### Minor Changes
+
+- 71fb4c2: Enable block deduplication, fix labelling and update metadata.
+
+### Patch Changes
+
+- Updated dependencies [71fb4c2]
+  - @platforma-open/milaboratories.leiden-clustering.workflow@1.7.0
+
 ## 1.1.20
 
 ### Patch Changes
