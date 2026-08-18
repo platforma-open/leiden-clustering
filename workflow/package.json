@@ -15,8 +15,6 @@
     "@platforma-sdk/workflow-tengo": "catalog:"
   },
   "devDependencies": {
-    "@milaboratories/software-pframes-conv": "catalog:",
-    "@platforma-open/milaboratories.software-small-binaries": "catalog:",
     "@platforma-sdk/tengo-builder": "catalog:",
     "@platforma-sdk/test": "catalog:",
     "shx": "catalog:",

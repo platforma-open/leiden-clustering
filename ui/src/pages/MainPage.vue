@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import "@milaboratories/graph-maker/styles";
 import {
   PlAlert,
   PlBlockPage,

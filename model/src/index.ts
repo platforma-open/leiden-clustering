@@ -1,5 +1,11 @@
 import type { GraphMakerState } from "@milaboratories/graph-maker";
-import type { InferOutputsType, PColumnIdAndSpec, PFrameHandle, PlRef } from "@platforma-sdk/model";
+import type {
+  InferOutputsType,
+  PColumnIdAndSpec,
+  PFrameHandle,
+  PlRef,
+  TreeNodeAccessor,
+} from "@platforma-sdk/model";
 import { BlockModel, isPColumn, isPColumnSpec } from "@platforma-sdk/model";
 
 export type UiState = {
@@ -14,7 +20,7 @@ export type BlockArgs = {
   title?: string;
 };
 
-export const model = BlockModel.create()
+export const platforma = BlockModel.create()
 
   .withArgs<BlockArgs>({
     resolution: 0.5,
@@ -42,7 +48,7 @@ export const model = BlockModel.create()
     ),
   )
 
-  .output("UMAPPf", (ctx): PFrameHandle | undefined => {
+  .outputWithStatus("UMAPPf", (ctx): PFrameHandle | undefined => {
     // Get input data, to discern batch corrected or not
     if (!ctx.uiState?.anchorColumn) return undefined;
     const anchorSpec = ctx.resultPool.getPColumnSpecByRef(ctx.uiState?.anchorColumn);
@@ -51,7 +57,7 @@ export const model = BlockModel.create()
     const pCols = ctx.resultPool
       .getData()
       .entries.map((c) => c.obj)
-      .filter(isPColumn)
+      .filter(isPColumn<TreeNodeAccessor>)
       .filter((col) => {
         return (
           (col.spec.name === "pl7.app/rna-seq/umap1" ||
@@ -81,7 +87,7 @@ export const model = BlockModel.create()
     return ctx.createPFrame([...finalPcols, ...upstream]);
   })
 
-  .output("tSNEPf", (ctx): PFrameHandle | undefined => {
+  .outputWithStatus("tSNEPf", (ctx): PFrameHandle | undefined => {
     // Get input data, to discern batch corrected or not
     if (!ctx.uiState?.anchorColumn) return undefined;
     const anchorSpec = ctx.resultPool.getPColumnSpecByRef(ctx.uiState?.anchorColumn);
@@ -90,7 +96,7 @@ export const model = BlockModel.create()
     const pCols = ctx.resultPool
       .getData()
       .entries.map((c) => c.obj)
-      .filter(isPColumn)
+      .filter(isPColumn<TreeNodeAccessor>)
       .filter((col) => {
         return (
           (col.spec.name === "pl7.app/rna-seq/tsne1" ||
@@ -129,7 +135,7 @@ export const model = BlockModel.create()
     const pCols = ctx.resultPool
       .getData()
       .entries.map((c) => c.obj)
-      .filter(isPColumn)
+      .filter(isPColumn<TreeNodeAccessor>)
       .filter((col) => {
         return (
           (col.spec.name.slice(0, -1) === "pl7.app/rna-seq/tsne" ||
@@ -172,4 +178,4 @@ export const model = BlockModel.create()
 
   .done(2);
 
-export type BlockOutputs = InferOutputsType<typeof model>;
+export type BlockOutputs = InferOutputsType<typeof platforma>;
