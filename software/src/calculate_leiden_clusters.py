@@ -1,110 +1,177 @@
-import pandas as pd
-import scanpy as sc
 import argparse
+import re
+
+import polars as pl
+import scanpy as sc
+
+# The exported frame labels its value column after the upstream p-column, so a
+# batch-corrected run arrives under a different header than a plain one.
+PC_VALUE_COLUMNS = (
+    "Principal Component Value",
+    "Principal Component Value - Harmony corrected",
+)
+CELL_HEADERS = ("Cell Barcode", "Cell ID")
+SAMPLE_HEADER = "Sample"
+PC_NUMBER_HEADER = "Principal Component Number"
 
 
-def process_pca_embeddings(input_csv, n_neighbors):
+def natural_key(name):
+    """Order PC columns by the number they carry.
+
+    Principal component numbers are String-typed upstream ("PC1", "PC2", ...),
+    so plain lexicographic order would put PC10 ahead of PC2. Column order does
+    not change the neighbour graph, but a stable order keeps runs reproducible.
     """
-    Process PCA embeddings from CSV and construct AnnData object.
-    
-    Parameters:
-        input_csv (str): Path to PCA embeddings CSV file.
-        n_neighbors (int): Number of neighbors for graph construction.
+    match = re.search(r"\d+", name)
+    return (0, int(match.group()), "") if match else (1, 0, name)
 
-    Returns:
-        adata (AnnData): Annotated data object with PCA embeddings.
+
+def load_embeddings(input_parquet):
+    """Read the long-format PCA embeddings and pivot them to a cell x PC matrix.
+
+    Returns the wide frame (sample id, cell id, one column per PC), the cell-id
+    header that was actually present, and the ordered PC column names.
     """
-    # Load PCA embeddings
-    df = pd.read_csv(input_csv)
+    scan = pl.scan_parquet(input_parquet)
+    schema = scan.collect_schema()
+    column_names = set(schema.names())
 
-    # Identify which PC value column to use
-    if "Principal Component Value" in df.columns:
-        pc_value_column = "Principal Component Value"
-    elif "Principal Component Value - Harmony corrected" in df.columns:
-        pc_value_column = "Principal Component Value - Harmony corrected"
-    else:
-        raise ValueError("Input CSV must contain either 'Principal Component Value' or 'Principal Component Value - Harmony corrected'.")
+    pc_value_column = next((c for c in PC_VALUE_COLUMNS if c in column_names), None)
+    if pc_value_column is None:
+        raise ValueError(
+            f"Embeddings Parquet must contain one of {sorted(PC_VALUE_COLUMNS)}. "
+            f"Found: {sorted(column_names)}"
+        )
 
-    # Validate and normalize column headers to support both legacy and new names
-    base_required = {"Sample", "Principal Component Number", pc_value_column}
-    cell_headers = {"Cell Barcode", "Cell ID"}
-    missing_base = base_required - set(df.columns)
-    has_cell_header = any(h in df.columns for h in cell_headers)
-    if missing_base or not has_cell_header:
-        expected_desc = f"{sorted(base_required)} and one of {sorted(cell_headers)}"
-        raise KeyError(f"PCA CSV must contain columns: {expected_desc}. Found: {list(df.columns)}")
+    # Support both the legacy 'Cell Barcode' header and the current 'Cell ID'.
+    cell_column = next((h for h in CELL_HEADERS if h in column_names), None)
+    base_required = {SAMPLE_HEADER, PC_NUMBER_HEADER}
+    missing_base = base_required - column_names
+    if missing_base or cell_column is None:
+        expected_desc = f"{sorted(base_required)} and one of {sorted(CELL_HEADERS)}"
+        raise KeyError(
+            f"Embeddings Parquet must contain columns: {expected_desc}. "
+            f"Found: {sorted(column_names)}"
+        )
 
-    # Normalize to legacy internal name 'Cell Barcode'
-    if "Cell ID" in df.columns and "Cell Barcode" not in df.columns:
-        df = df.rename(columns={"Cell ID": "Cell Barcode"})
+    # Sample and cell ids repeat once per principal component, so holding them as
+    # categoricals keeps the long frame small. Parquet carries its own dtypes, so
+    # the cast rides in the scan plan instead of a read-time schema override.
+    long_df = scan.with_columns(
+        [pl.col(c).cast(pl.Categorical) for c in (SAMPLE_HEADER, cell_column)]
+    ).collect()
 
-    # Create a unique identifier: SampleId + CellId
-    df["UniqueCellId"] = df["Sample"] + "_" + df["Cell Barcode"]
+    # Pivot on the (sample, cell) pair rather than on a concatenated key, so the
+    # two ids stay in their own columns and never have to be split apart again.
+    wide = long_df.pivot(
+        on=PC_NUMBER_HEADER,
+        index=[SAMPLE_HEADER, cell_column],
+        values=pc_value_column,
+    )
 
-    # Pivot data to have cells as rows, PCs as columns
-    pca_matrix = df.pivot(index="UniqueCellId", columns="Principal Component Number", values=pc_value_column)
+    pc_columns = sorted(
+        (c for c in wide.columns if c not in (SAMPLE_HEADER, cell_column)),
+        key=natural_key,
+    )
 
-    # Create AnnData object
-    adata = sc.AnnData(pca_matrix)
+    # Restore the dtypes the input carried. Downstream pfconv reads these back
+    # against the axis specs of the source p-column, so the Parquet we emit has
+    # to hold the same physical types the Parquet we read did.
+    wide = wide.with_columns(
+        pl.col(SAMPLE_HEADER).cast(schema[SAMPLE_HEADER]),
+        pl.col(cell_column).cast(schema[cell_column]),
+    )
 
-    # Compute the neighborhood graph
+    return wide, cell_column, pc_columns
+
+
+def build_neighbour_graph(wide, pc_columns, n_neighbors):
+    """Construct an AnnData object over the PC matrix and compute its kNN graph."""
+    adata = sc.AnnData(wide.select(pc_columns).to_numpy())
     sc.pp.neighbors(adata, use_rep="X", n_neighbors=n_neighbors)
-
     return adata
 
 
-def perform_clustering(adata, leiden_resolution):
+def perform_clustering(adata, wide, cell_column, leiden_resolution):
+    """Run Leiden clustering and attach the assignments to the cell identities.
+
+    AnnData preserves row order, so the i-th observation corresponds to the i-th
+    row of `wide` and the two can be zipped without a join.
     """
-    Perform Leiden clustering on an AnnData object.
-    
-    Parameters:
-        adata (AnnData): Annotated data object.
-        leiden_resolution (float): Resolution parameter for Leiden clustering.
+    sc.tl.leiden(
+        adata,
+        resolution=leiden_resolution,
+        flavor="igraph",
+        n_iterations=2,
+        directed=False,
+    )
 
-    Returns:
-        cluster_assignments (DataFrame): Dataframe with cell clustering assignments.
-    """
-    # Perform Leiden clustering
-    sc.tl.leiden(adata, resolution=leiden_resolution, flavor='igraph', n_iterations=2, directed=False)
-    
-    # Extract cluster assignments
-    cluster_assignments = pd.DataFrame({
-        "UniqueCellId": adata.obs_names,  # Unique ID as first column
-        "Cluster": "CL-" + adata.obs["leiden"].astype(str)
-    })
+    clusters = pl.Series("Cluster", ("CL-" + adata.obs["leiden"].astype(str)).to_numpy())
 
-    # Split SampleId and CellId
-    cluster_assignments[["SampleId", "CellId"]] = cluster_assignments["UniqueCellId"].str.split("_", n=1, expand=True)
-    
-    # Reorder columns to have UniqueCellId first
-    cluster_assignments = cluster_assignments[["UniqueCellId", "SampleId", "CellId", "Cluster"]]
-
-    return cluster_assignments
+    return wide.select(
+        pl.concat_str(
+            [
+                pl.col(SAMPLE_HEADER).cast(pl.String),
+                pl.lit("_"),
+                pl.col(cell_column).cast(pl.String),
+            ]
+        ).alias("UniqueCellId"),
+        pl.col(SAMPLE_HEADER).alias("SampleId"),
+        pl.col(cell_column).alias("CellId"),
+    ).with_columns(clusters)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run Leiden clustering on PCA embeddings with duplicate CellIds across samples.")
-    parser.add_argument("--input_csv", type=str, required=True, help="Path to the PCA embeddings CSV file.")
-    parser.add_argument("--output_csv", type=str, required=True, help="Path to save cluster assignments.")
-    parser.add_argument("--linker_csv", type=str, default="leiden_linker.csv", help="Path to save linker data for pFrame construction.")
-    parser.add_argument("--n_neighbors", type=int, default=15, help="Number of neighbors for the graph (default: 15).")
-    parser.add_argument("--leiden_resolution", type=float, default=1.0, help="Resolution for Leiden clustering (default: 1.0).")
+    parser = argparse.ArgumentParser(
+        description="Run Leiden clustering on PCA embeddings with duplicate CellIds across samples."
+    )
+    parser.add_argument(
+        "--input_parquet",
+        type=str,
+        required=True,
+        help="Path to the long-format PCA embeddings Parquet file.",
+    )
+    parser.add_argument(
+        "--output_parquet",
+        type=str,
+        required=True,
+        help="Path to save cluster assignments as Parquet.",
+    )
+    parser.add_argument(
+        "--linker_parquet",
+        type=str,
+        default="leiden_linker.parquet",
+        help="Path to save linker data for pFrame construction.",
+    )
+    parser.add_argument(
+        "--n_neighbors",
+        type=int,
+        default=15,
+        help="Number of neighbors for the graph (default: 15).",
+    )
+    parser.add_argument(
+        "--leiden_resolution",
+        type=float,
+        default=1.0,
+        help="Resolution for Leiden clustering (default: 1.0).",
+    )
 
     args = parser.parse_args()
 
-    # Process PCA embeddings
-    adata = process_pca_embeddings(args.input_csv, args.n_neighbors)
+    wide, cell_column, pc_columns = load_embeddings(args.input_parquet)
+    adata = build_neighbour_graph(wide, pc_columns, args.n_neighbors)
+    cluster_assignments = perform_clustering(
+        adata, wide, cell_column, args.leiden_resolution
+    )
 
-    # Perform clustering
-    cluster_assignments = perform_clustering(adata, args.leiden_resolution)
+    # Linker column: [SampleId][CellId][Cluster] -> 1. Int32 matches the "Int"
+    # valueType the workflow declares for the linker p-column.
+    linker_data = cluster_assignments.select("SampleId", "CellId", "Cluster").with_columns(
+        pl.lit(1, dtype=pl.Int32).alias("Link")
+    )
 
-    # Create linker data: SampleId,CellId,Cluster,Link
-    linker_data = cluster_assignments[["SampleId", "CellId", "Cluster"]].copy()
-    linker_data["Link"] = 1
-
-    # Save outputs
-    cluster_assignments.to_csv(args.output_csv, index=False)
-    linker_data.to_csv(args.linker_csv, index=False)
+    cluster_assignments.write_parquet(args.output_parquet)
+    linker_data.write_parquet(args.linker_parquet)
 
 
 if __name__ == "__main__":

@@ -23,21 +23,30 @@ wf.body(func(args) {
 	resolution := args.resolution
 	// nNeighbors := args.nNeighbors
 
-	// Set default memory and CPU for imports
+	// Set default memory and CPU for the cluster/linker imports: those carry one
+	// row per cell, orders of magnitude smaller than the embeddings matrix.
     defaultConvMem := "16GiB" // @TODO: set based on the size of the input
     defaultConvCpu := 1 // @TODO: set based on the size of the input
 
-	csvEmbeddings := xsv.exportFrame([embeddings], "csv", { mem: defaultConvMem, cpu: defaultConvCpu })
+	// The embeddings export is the heaviest conversion in the block: the long-format
+	// pcvalue p-column holds one row per (cell, principal component) pair, which reaches
+	// tens of millions of rows on real datasets. Parquet keeps it columnar and streams
+	// through sink_parquet, instead of paying CSV text encoding for two high-cardinality
+	// string columns.
+	embeddingsConvMem := "32GiB" // @TODO: set based on the size of the input
+	embeddingsConvCpu := 4 // @TODO: set based on the size of the input
+
+	embeddingsParquet := xsv.exportFrame([embeddings], "parquet", { mem: embeddingsConvMem, cpu: embeddingsConvCpu })
 
 	leidenClusteringRender := render.create(leidenClusteringTpl, {
-		csvEmbeddings: csvEmbeddings,
+		embeddingsParquet: embeddingsParquet,
 		resolution: resolution,
 		mem: "32GiB",
 		cpu: 1
 	})
 
 	leidenImportParams := pfLeidenConv.getColumns(blockId, inputSpec, resolution)
-	leidenPf := xsv.importFile(leidenClusteringRender.output("leidenClustersCsv"), "csv", leidenImportParams, {splitDataAndSpec: true, mem: defaultConvMem, cpu: defaultConvCpu})
+	leidenPf := xsv.importFile(leidenClusteringRender.output("leidenClustersParquet"), "parquet", leidenImportParams, {splitDataAndSpec: true, mem: defaultConvMem, cpu: defaultConvCpu})
 
 	// Extract cluster column spec from leidenImportParams and convert to axis spec (change valueType key to type)
 	clusterColumnSpec := leidenImportParams.columns[0].spec
@@ -49,7 +58,7 @@ wf.body(func(args) {
 	}
 
 	// Create linker column: [SampleId][CellId][Cluster] -> 1
-	leidenLinkerPf := xsv.importFile(leidenClusteringRender.output("leidenLinkerCsv"), "csv", {
+	leidenLinkerPf := xsv.importFile(leidenClusteringRender.output("leidenLinkerParquet"), "parquet", {
 		axes: [{
 			column: "SampleId",
 			spec: inputSpec.axesSpec[0]
