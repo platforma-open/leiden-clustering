@@ -1,11 +1,11 @@
-import { model } from '@platforma-open/milaboratories.leiden-clustering.model';
-import { defineApp } from '@platforma-sdk/ui-vue';
-import MainPage from './pages/MainPage.vue';
+import { platforma } from "@platforma-open/milaboratories.leiden-clustering.model";
+import { defineApp } from "@platforma-sdk/ui-vue";
+import MainPage from "./pages/MainPage.vue";
 
-export const sdkPlugin = defineApp(model, () => {
+export const sdkPlugin = defineApp(platforma, () => {
   return {
     routes: {
-      '/': () => MainPage,
+      "/": () => MainPage,
     },
   };
 });
