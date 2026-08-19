@@ -49,6 +49,16 @@ export const platforma = BlockModel.create()
   )
 
   .outputWithStatus("UMAPPf", (ctx): PFrameHandle | undefined => {
+    // This block's own clusters first. Until the workflow has produced them there is
+    // nothing to plot, and returning here keeps the lambda clear of the result pool.
+    // `getData()` resolves data for every entry in the pool and marks the whole lambda
+    // unstable while that is in flight; GraphMaker renders an unstable `undefined` as
+    // "running". Reading the pool before this guard therefore made the chart claim the
+    // block was running the moment a dataset was picked. Guarding first yields a stable
+    // `undefined`, which GraphMaker renders as its idle "no pFrame" screen.
+    const clusters = ctx.outputs?.resolve("leidenClusters")?.getPColumns();
+    if (clusters === undefined) return undefined;
+
     // Get input data, to discern batch corrected or not
     if (!ctx.uiState?.anchorColumn) return undefined;
     const anchorSpec = ctx.resultPool.getPColumnSpecByRef(ctx.uiState?.anchorColumn);
@@ -67,13 +77,6 @@ export const platforma = BlockModel.create()
         );
       });
 
-    // enriching with leiden clusters data
-    const upstream = ctx.outputs?.resolve("leidenClusters")?.getPColumns();
-
-    if (upstream === undefined) {
-      return undefined;
-    }
-
     // Return batch corrected UMAP if present
     let finalPcols = pCols.filter(
       (col) => col.spec.domain?.["pl7.app/rna-seq/batch-corrected"] === "true",
@@ -84,10 +87,14 @@ export const platforma = BlockModel.create()
       );
     }
 
-    return ctx.createPFrame([...finalPcols, ...upstream]);
+    return ctx.createPFrame([...finalPcols, ...clusters]);
   })
 
   .outputWithStatus("tSNEPf", (ctx): PFrameHandle | undefined => {
+    // See UMAPPf: guard on this block's own clusters before touching the result pool.
+    const clusters = ctx.outputs?.resolve("leidenClusters")?.getPColumns();
+    if (clusters === undefined) return undefined;
+
     // Get input data, to discern batch corrected or not
     if (!ctx.uiState?.anchorColumn) return undefined;
     const anchorSpec = ctx.resultPool.getPColumnSpecByRef(ctx.uiState?.anchorColumn);
@@ -106,13 +113,6 @@ export const platforma = BlockModel.create()
         );
       });
 
-    // enriching with leiden clusters data
-    const upstream = ctx.outputs?.resolve("leidenClusters")?.getPColumns();
-
-    if (upstream === undefined) {
-      return undefined;
-    }
-
     // Return batch corrected UMAP if present
     let finalPcols = pCols.filter(
       (col) => col.spec.domain?.["pl7.app/rna-seq/batch-corrected"] === "true",
@@ -123,10 +123,14 @@ export const platforma = BlockModel.create()
       );
     }
 
-    return ctx.createPFrame([...finalPcols, ...upstream]);
+    return ctx.createPFrame([...finalPcols, ...clusters]);
   })
 
   .output("plotPcols", (ctx) => {
+    // See UMAPPf: guard on this block's own clusters before touching the result pool.
+    const clusters = ctx.outputs?.resolve("leidenClusters")?.getPColumns();
+    if (clusters === undefined) return undefined;
+
     // Get input data, to discern batch corrected or not
     if (!ctx.uiState?.anchorColumn) return undefined;
     const anchorSpec = ctx.resultPool.getPColumnSpecByRef(ctx.uiState?.anchorColumn);
@@ -144,13 +148,6 @@ export const platforma = BlockModel.create()
         );
       });
 
-    // enriching with leiden clusters data
-    const upstream = ctx.outputs?.resolve("leidenClusters")?.getPColumns();
-
-    if (upstream === undefined) {
-      return undefined;
-    }
-
     // Return batch corrected UMAP if present
     let finalPcols = pCols.filter(
       (col) => col.spec.domain?.["pl7.app/rna-seq/batch-corrected"] === "true",
@@ -161,7 +158,7 @@ export const platforma = BlockModel.create()
       );
     }
 
-    return [...finalPcols, ...upstream].map(
+    return [...finalPcols, ...clusters].map(
       (c) =>
         ({
           columnId: c.id,
