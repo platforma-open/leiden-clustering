@@ -34,10 +34,13 @@ were run against the same 24592-cell input at several resolutions and produced b
 partitions (ARI 1.0000). The pivot ordering is pinned to the order pandas produced, so that stays
 true regardless of how the exchange file happens to be ordered.
 
-**Cluster assignments will change once with this release**, for an unrelated reason. The block
-pinned five Python packages but left `pynndescent`, `numba`, `llvmlite`, `umap-learn`,
-`scikit-learn`, `python-igraph` and `anndata` floating — all of which sit on the neighbours/Leiden
-path. Two builds at different dates resolved different versions and produced different clusterings
-with no code change: measured at 20 vs 18 clusters, ARI 0.52, on identical input and resolution.
-The full dependency set is now pinned, so results are stable from here on, but they will not match
-runs from before this release.
+Cluster assignments are also preserved, but that took a second fix. The block pinned five Python
+packages and left `pynndescent`, `numba`, `llvmlite`, `umap-learn`, `scikit-learn`, `igraph` and
+`anndata` floating — all of which sit on the neighbours/Leiden path. Two builds at different dates
+resolved different versions and produced different clusterings with no code change at all. Measured
+on a real 24592-cell input at one resolution, three environments differing *only* in these versions
+gave 20 / 18 / 18 clusters with ARI between them as low as 0.52.
+
+The full dependency set is now pinned to the versions the **previously published block actually
+ran**, recovered from its released container image, so this release reproduces the clusterings
+users already have rather than silently re-partitioning their data.
