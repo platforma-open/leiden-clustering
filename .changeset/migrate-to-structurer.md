@@ -29,8 +29,15 @@ the export was inflating columnar data into text for no benefit.
   `Sample + "_" + CellId` string that was split back apart on the first underscore, so a sample
   whose name contains an underscore no longer has its SampleId and CellId recovered incorrectly.
 
-Cluster assignments are unchanged by this release. Leiden's local-moving phase walks nodes by
-index, so the order of the pivoted matrix determines the partition. `pandas.pivot` sorted its
-index and columns; `polars.pivot` preserves first-appearance order, which would have silently
-reshuffled the matrix and produced a different — not wrong, but different — clustering. Both axes
-are pinned to the pandas order, so the block keeps emitting the partitions it emitted before.
+The pandas -> polars rewrite itself does not change cluster assignments: the old and new scripts
+were run against the same 24592-cell input at several resolutions and produced byte-identical
+partitions (ARI 1.0000). The pivot ordering is pinned to the order pandas produced, so that stays
+true regardless of how the exchange file happens to be ordered.
+
+**Cluster assignments will change once with this release**, for an unrelated reason. The block
+pinned five Python packages but left `pynndescent`, `numba`, `llvmlite`, `umap-learn`,
+`scikit-learn`, `python-igraph` and `anndata` floating — all of which sit on the neighbours/Leiden
+path. Two builds at different dates resolved different versions and produced different clusterings
+with no code change: measured at 20 vs 18 clusters, ARI 0.52, on identical input and resolution.
+The full dependency set is now pinned, so results are stable from here on, but they will not match
+runs from before this release.
