@@ -1,5 +1,4 @@
 import argparse
-import re
 
 import polars as pl
 import scanpy as sc
@@ -15,15 +14,21 @@ SAMPLE_HEADER = "Sample"
 PC_NUMBER_HEADER = "Principal Component Number"
 
 
-def natural_key(name):
-    """Order PC columns by the number they carry.
+"""Ordering note.
 
-    Principal component numbers are String-typed upstream ("PC1", "PC2", ...),
-    so plain lexicographic order would put PC10 ahead of PC2. Column order does
-    not change the neighbour graph, but a stable order keeps runs reproducible.
-    """
-    match = re.search(r"\d+", name)
-    return (0, int(match.group()), "") if match else (1, 0, name)
+Leiden is order-dependent: its local-moving phase walks nodes by index, so two
+runs over the *same* neighbour graph give different partitions if the rows were
+fed in a different order. The pre-Parquet implementation pivoted with pandas,
+which sorts both the index and the columns of its result; polars preserves
+first-appearance order instead. Both axes are therefore pinned here to the order
+pandas produced, so this version reproduces the partitions the block emitted
+before the migration.
+
+Row order is what actually matters. Column order is provably irrelevant to the
+graph (permuting features leaves every pairwise distance unchanged), but it is
+pinned too so the whole pipeline is reproducible by inspection rather than by
+argument.
+"""
 
 
 def load_embeddings(input_parquet):
@@ -69,10 +74,8 @@ def load_embeddings(input_parquet):
         values=pc_value_column,
     )
 
-    pc_columns = sorted(
-        (c for c in wide.columns if c not in (SAMPLE_HEADER, cell_column)),
-        key=natural_key,
-    )
+    # Lexicographic, matching pandas — see the ordering note at the top.
+    pc_columns = sorted(c for c in wide.columns if c not in (SAMPLE_HEADER, cell_column))
 
     # Restore the dtypes the input carried. Downstream pfconv reads these back
     # against the axis specs of the source p-column, so the Parquet we emit has
@@ -81,6 +84,19 @@ def load_embeddings(input_parquet):
         pl.col(SAMPLE_HEADER).cast(schema[SAMPLE_HEADER]),
         pl.col(cell_column).cast(schema[cell_column]),
     )
+
+    # The row key doubles as the sort key and as the emitted UniqueCellId. Sorting
+    # on the joined string rather than on (sample, cell) reproduces pandas' order
+    # exactly, including where one sample name is a prefix of another.
+    wide = wide.with_columns(
+        pl.concat_str(
+            [
+                pl.col(SAMPLE_HEADER).cast(pl.String),
+                pl.lit("_"),
+                pl.col(cell_column).cast(pl.String),
+            ]
+        ).alias("UniqueCellId")
+    ).sort("UniqueCellId")
 
     return wide, cell_column, pc_columns
 
@@ -109,13 +125,7 @@ def perform_clustering(adata, wide, cell_column, leiden_resolution):
     clusters = pl.Series("Cluster", ("CL-" + adata.obs["leiden"].astype(str)).to_numpy())
 
     return wide.select(
-        pl.concat_str(
-            [
-                pl.col(SAMPLE_HEADER).cast(pl.String),
-                pl.lit("_"),
-                pl.col(cell_column).cast(pl.String),
-            ]
-        ).alias("UniqueCellId"),
+        "UniqueCellId",
         pl.col(SAMPLE_HEADER).alias("SampleId"),
         pl.col(cell_column).alias("CellId"),
     ).with_columns(clusters)
