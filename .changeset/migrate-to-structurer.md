@@ -28,3 +28,9 @@ the export was inflating columnar data into text for no benefit.
 - Fixes a latent id bug: the pivot now keys on the (sample, cell) pair instead of a
   `Sample + "_" + CellId` string that was split back apart on the first underscore, so a sample
   whose name contains an underscore no longer has its SampleId and CellId recovered incorrectly.
+
+Cluster assignments are unchanged by this release. Leiden's local-moving phase walks nodes by
+index, so the order of the pivoted matrix determines the partition. `pandas.pivot` sorted its
+index and columns; `polars.pivot` preserves first-appearance order, which would have silently
+reshuffled the matrix and produced a different — not wrong, but different — clustering. Both axes
+are pinned to the pandas order, so the block keeps emitting the partitions it emitted before.
