@@ -1,5 +1,6 @@
 packages:
   - block
+  - kind
   - model
   - software
   - test
